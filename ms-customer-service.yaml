@@ -1,0 +1,668 @@
+openapi: 3.0.3
+info:
+  title: MS Customer Service API
+  description: |
+    Customer Service microservice for Challenge Bank.
+    Manages customer information including profiles, validation, and status updates.
+  version: 1.0.0
+  contact:
+    name: Challenge Bank API Support
+    email: api-support@challengebank.com
+
+servers:
+  - url: https://api.challengebank.com/v1
+    description: Production server
+  - url: https://api-staging.challengebank.com/v1
+    description: Staging server
+  - url: http://localhost:8080/v1
+    description: Local development server
+
+tags:
+  - name: Customers
+    description: Customer management operations
+  - name: Validation
+    description: Customer validation operations
+
+paths:
+  /customers:
+    get:
+      tags:
+        - Customers
+      summary: Get all customers
+      description: Retrieves a paginated list of all customers
+      operationId: getAllCustomers
+      parameters:
+        - name: page
+          in: query
+          description: Page number (zero-based)
+          required: false
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          description: Filter by customer status
+          required: false
+          schema:
+            type: string
+            enum: [ACTIVE, INACTIVE, SUSPENDED, PENDING]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPageResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+    post:
+      tags:
+        - Customers
+      summary: Create a new customer
+      description: Creates a new customer in the system
+      operationId: createCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+      responses:
+        '201':
+          description: Customer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Customer already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /customers/{customerId}:
+    get:
+      tags:
+        - Customers
+      summary: Get customer by ID
+      description: Retrieves detailed information about a specific customer
+      operationId: getCustomerById
+      parameters:
+        - name: customerId
+          in: path
+          description: Unique customer identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+    put:
+      tags:
+        - Customers
+      summary: Update customer
+      description: Updates an existing customer's information
+      operationId: updateCustomer
+      parameters:
+        - name: customerId
+          in: path
+          description: Unique customer identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerRequest'
+      responses:
+        '200':
+          description: Customer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+    delete:
+      tags:
+        - Customers
+      summary: Delete customer
+      description: Soft deletes a customer (sets status to INACTIVE)
+      operationId: deleteCustomer
+      parameters:
+        - name: customerId
+          in: path
+          description: Unique customer identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Customer deleted successfully
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /customers/document/{documentId}:
+    get:
+      tags:
+        - Customers
+      summary: Get customer by document ID
+      description: Retrieves customer information using their identity document number
+      operationId: getCustomerByDocument
+      parameters:
+        - name: documentId
+          in: path
+          description: Customer's identity document number
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /customers/{customerId}/status:
+    patch:
+      tags:
+        - Customers
+      summary: Update customer status
+      description: Updates the status of a customer
+      operationId: updateCustomerStatus
+      parameters:
+        - name: customerId
+          in: path
+          description: Unique customer identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateStatusRequest'
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /customers/validate:
+    post:
+      tags:
+        - Validation
+      summary: Validate customer
+      description: Validates if a customer exists and is active
+      operationId: validateCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateCustomerRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+  /customers/{customerId}/validate:
+    get:
+      tags:
+        - Validation
+      summary: Validate customer by ID
+      description: Checks if a customer ID is valid and the customer is active
+      operationId: validateCustomerById
+      parameters:
+        - name: customerId
+          in: path
+          description: Unique customer identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+
+components:
+  schemas:
+    CustomerResponse:
+      type: object
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          description: Unique customer identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        firstName:
+          type: string
+          description: Customer's first name
+          example: "John"
+        lastName:
+          type: string
+          description: Customer's last name
+          example: "Doe"
+        documentType:
+          type: string
+          description: Type of identity document
+          enum: [DNI, PASSPORT, CEDULA, RUC]
+          example: "DNI"
+        documentId:
+          type: string
+          description: Identity document number
+          example: "12345678"
+        email:
+          type: string
+          format: email
+          description: Customer's email address
+          example: "john.doe@email.com"
+        phone:
+          type: string
+          description: Customer's phone number
+          example: "+1234567890"
+        dateOfBirth:
+          type: string
+          format: date
+          description: Customer's date of birth
+          example: "1990-05-15"
+        status:
+          type: string
+          description: Current status of the customer
+          enum: [ACTIVE, INACTIVE, SUSPENDED, PENDING]
+          example: "ACTIVE"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when customer was created
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when customer was last updated
+          example: "2024-01-20T14:45:00Z"
+      required:
+        - customerId
+        - firstName
+        - lastName
+        - documentType
+        - documentId
+        - email
+        - status
+        - createdAt
+
+    CreateCustomerRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Customer's first name
+          example: "John"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Customer's last name
+          example: "Doe"
+        documentType:
+          type: string
+          description: Type of identity document
+          enum: [DNI, PASSPORT, CEDULA, RUC]
+          example: "DNI"
+        documentId:
+          type: string
+          minLength: 5
+          maxLength: 20
+          description: Identity document number
+          example: "12345678"
+        email:
+          type: string
+          format: email
+          description: Customer's email address
+          example: "john.doe@email.com"
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{1,14}$'
+          description: Customer's phone number
+          example: "+1234567890"
+        dateOfBirth:
+          type: string
+          format: date
+          description: Customer's date of birth
+          example: "1990-05-15"
+        address:
+          type: string
+          maxLength: 500
+          description: Customer's address
+          example: "123 Main Street, City, Country"
+      required:
+        - firstName
+        - lastName
+        - documentType
+        - documentId
+        - email
+
+    UpdateCustomerRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Customer's first name
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Customer's last name
+        email:
+          type: string
+          format: email
+          description: Customer's email address
+        phone:
+          type: string
+          pattern: '^\+?[1-9]\d{1,14}$'
+          description: Customer's phone number
+        address:
+          type: string
+          maxLength: 500
+          description: Customer's address
+
+    UpdateStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          description: New status for the customer
+          enum: [ACTIVE, INACTIVE, SUSPENDED, PENDING]
+          example: "SUSPENDED"
+        reason:
+          type: string
+          maxLength: 500
+          description: Reason for status change
+          example: "Account suspended due to verification requirements"
+      required:
+        - status
+
+    ValidateCustomerRequest:
+      type: object
+      properties:
+        customerId:
+          type: string
+          format: uuid
+          description: Unique customer identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        documentId:
+          type: string
+          description: Identity document number
+          example: "12345678"
+
+    ValidationResponse:
+      type: object
+      properties:
+        valid:
+          type: boolean
+          description: Indicates if the customer is valid
+          example: true
+        customerId:
+          type: string
+          format: uuid
+          description: Customer identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          description: Current customer status
+          enum: [ACTIVE, INACTIVE, SUSPENDED, PENDING]
+          example: "ACTIVE"
+        message:
+          type: string
+          description: Validation message
+          example: "Customer is active and valid"
+      required:
+        - valid
+
+    CustomerPageResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerResponse'
+        page:
+          type: integer
+          description: Current page number
+          example: 0
+        size:
+          type: integer
+          description: Number of items per page
+          example: 20
+        totalElements:
+          type: integer
+          description: Total number of customers
+          example: 150
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 8
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp when the error occurred
+          example: "2024-01-20T15:30:00Z"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 400
+        error:
+          type: string
+          description: Error type
+          example: "Bad Request"
+        message:
+          type: string
+          description: Error message
+          example: "Invalid customer data provided"
+        path:
+          type: string
+          description: Request path that caused the error
+          example: "/v1/customers"
+        errors:
+          type: array
+          description: List of specific validation errors
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: "email"
+              message:
+                type: string
+                example: "Email format is invalid"
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+security:
+  - bearerAuth: []
