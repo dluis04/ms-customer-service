@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:central.sonatype.com)",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}
